@@ -1924,6 +1924,29 @@ describe('WebSocket', function() {
       });
     });
 
+    it('can send and receive a binary array', function(done) {
+      var array = [];
+      array.length = 5;
+      for (var i = 0; i < array.length; i++) array[i] = (i * 2) & 0xFF;
+      var wss = new WebSocketServer({port: ++port, perMessageDeflate: true}, function() {
+        var ws = new WebSocket('ws://localhost:' + port, {perMessageDeflate: true});
+        ws.on('open', function() {
+          ws.send(array, {compress: true, binary: true});
+        });
+        ws.on('message', function(message, flags) {
+          assert.ok(areArraysEqual(array, message));
+          ws.terminate();
+          wss.close();
+          done();
+        });
+      });
+      wss.on('connection', function(ws) {
+        ws.on('message', function(message, flags) {
+          ws.send(message, {compress: true, binary: true});
+        });
+      });
+    });
+
     it('can send and receive ArrayBuffer', function(done) {
       var array = new Float32Array(5);
       for (var i = 0; i < array.length; i++) array[i] = i / 2;
